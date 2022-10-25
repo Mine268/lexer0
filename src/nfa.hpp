@@ -34,6 +34,7 @@ namespace lexer0 {
         std::tuple<bool, bool> trans_on(input_type v);
         void reset();
         bit_flagger status_code() const;
+        std::string to_string() const;
 
     };
 

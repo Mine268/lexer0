@@ -71,14 +71,15 @@ namespace lexer0 {
         bit_flagger flagger {size, false};
         for (auto c : curr_status) {
             q.push(c);
+            flagger.set(c, true);
         }
         while (!q.empty()) {
             auto top = q.front();
             q.pop();
-            flagger.set(top, true);
             for (auto &[key, val] : trans.at(top)) {
                 if (std::get<0>(key) && !flagger.get(val)) {
                     q.push(val);
+                    flagger.set(val, true);
                     curr_status.push_back(val);
                 }
             }
@@ -111,18 +112,18 @@ namespace lexer0 {
         curr_status = std::move(next_status);
         trans_empty();
         is_trapped = curr_status.empty() ||
-                std::reduce(curr_status.begin(),
+                std::accumulate(curr_status.begin(),
                             curr_status.end(),
                             true,
-                            [&](auto res, auto ix) {
-                    return res & trap_status.at(ix);
+                            [&](auto ix1, auto ix2) {
+                    return trap_status.at(ix1) && trap_status.at(ix2);
                 });
         return std::make_tuple(
-                std::reduce(curr_status.begin(),
+                std::accumulate(curr_status.begin(),
                             curr_status.end(),
                             false,
-                            [&](auto res, auto ix) {
-                    return res | accept_status.at(ix);
+                            [&](auto ix1, auto ix2) {
+                    return accept_status.at(ix1) || accept_status.at(ix2);
                 }),
                 is_trapped
                 );
@@ -134,5 +135,30 @@ namespace lexer0 {
 
     void nfa::add_trans(status_type from, status_type to) {
         this->add_trans(from, to, std::make_tuple(true, input_type{}));
+    }
+
+    std::string nfa::to_string() const {
+        std::string ret;
+        for (std::size_t status = 0; status < size; ++status) {
+            auto& edges = trans.at(status);
+            ret += "status " + std::to_string(status) + ": ";
+            for (auto &[input, next] : edges) {
+                if (std::get<0>(input)) {
+                    ret += "none=>" + std::to_string(next) + ' ';
+                } else {
+                    ret += "[" + std::to_string(std::get<1>(input)) + "]=>"
+                            + std::to_string(next) + ' ';
+                }
+            }
+            ret += '\n';
+        }
+        ret += "accept:";
+        for (std::size_t ix = 0; ix < accept_status.size(); ++ix) {
+            if (accept_status.at(ix)) {
+                ret += ' ' + std::to_string(ix);
+            }
+        }
+        ret += '\n';
+        return ret;
     }
 }

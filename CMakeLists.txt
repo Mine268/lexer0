@@ -12,6 +12,7 @@ add_library(nfa STATIC src/nfa.cpp)
 target_link_libraries(nfa bit_flagger)
 
 add_library(reg_expr STATIC src/reg_expr.cpp)
+target_link_libraries(reg_expr nfa dfa)
 
 add_executable(lexer0 src/lexer0.cpp)
 target_link_libraries(lexer0 reg_expr)

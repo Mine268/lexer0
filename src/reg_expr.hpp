@@ -2,39 +2,61 @@
 
 #include <type_traits>
 
+#include "nfa.hpp"
+
 namespace lexer0 {
 
     class reg_expr {
+    protected:
+        std::size_t fa_size{0};
     public:
+        /**
+         * Create the NFA recognized the regular expression
+         * @param fa The NFA to be created
+         * @param zero_status The initial status code current NFA
+         */
+        virtual void create_nfa(nfa& fa, std::size_t zero_status) const = 0;
         virtual ~reg_expr() = default;
-
-        virtual std::size_t get_size() const = 0;
+        /**
+         * Return the size of the FA for this regular expression
+         * @param force Force-ly update the size
+         * @return
+         */
+        [[nodiscard]] virtual std::size_t get_size(bool force) = 0;
     };
+
 
     class terminate_expr : public virtual reg_expr {
     public:
-        std::size_t get_size() const override;
+        int terminate_char {0};
+        explicit terminate_expr(int tc);
+        [[nodiscard]] std::size_t get_size(bool force) override;
+    protected:
+        void create_nfa(nfa& fa, std::size_t zero_status) const override;
     };
+
 
     class repeat_expr : public virtual reg_expr {
     public:
         explicit repeat_expr(reg_expr* item);
         ~repeat_expr() override;
-
         reg_expr* rep_item{nullptr};
-        std::size_t get_size() const override;
+        [[nodiscard]] std::size_t get_size(bool force) override;
+    protected:
+        void create_nfa(nfa& fa, std::size_t zero_status) const override;
     };
+
 
     class cat_expr : public virtual reg_expr {
     public:
         cat_expr(reg_expr* i1, reg_expr* i2);
         ~cat_expr() override;
-
         reg_expr* cat_item1{nullptr}, *cat_item2{nullptr};
-        std::size_t get_size() const override;
-
+        [[nodiscard]] std::size_t get_size(bool force) override;
         template<typename... T>
         static reg_expr* get_cat(reg_expr* ft, T...);
+    protected:
+        void create_nfa(nfa& fa, std::size_t zero_status) const override;
     };
 
     template<typename... T>
@@ -51,13 +73,12 @@ namespace lexer0 {
     public:
         or_expr(reg_expr* i1, reg_expr* i2);
         ~or_expr() override;
-
-
         reg_expr* or_item1{nullptr}, *or_item2{nullptr};
-        std::size_t get_size() const override;
-
+        [[nodiscard]] std::size_t get_size(bool force) override;
         template<typename... T>
         static reg_expr* get_or(reg_expr* ft, T...);
+    protected:
+        void create_nfa(nfa& fa, std::size_t zero_status) const override;
     };
 
     template<typename... T>
@@ -65,7 +86,7 @@ namespace lexer0 {
         if constexpr (sizeof...(ts) == 0) {
             return ft;
         } else {
-            return new cat_expr{ft, or_expr::get_or(ts...)};
+            return new or_expr{ft, or_expr::get_or(ts...)};
         }
     }
 
