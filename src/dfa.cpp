@@ -59,4 +59,25 @@ namespace lexer0 {
     status_type dfa::status_code() const {
         return curr_status;
     }
+
+    std::string dfa::to_string() const {
+        std::string ret;
+        for (std::size_t status = 0; status < size; ++status) {
+            auto& edges = trans.at(status);
+            ret += "status " + std::to_string(status) + ": ";
+            for (auto &[input, next] : edges) {
+                ret += "[" + std::to_string(input) + "]=>"
+                       + std::to_string(next) + ' ';
+            }
+            ret += '\n';
+        }
+        ret += "accept:";
+        for (std::size_t ix = 0; ix < accept_status.size(); ++ix) {
+            if (accept_status.at(ix)) {
+                ret += ' ' + std::to_string(ix);
+            }
+        }
+        ret += '\n';
+        return ret;
+    }
 }

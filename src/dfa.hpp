@@ -65,7 +65,12 @@ namespace lexer0 {
         /**
          * @brief Get the current status code
         */
-        status_type status_code() const;
+        [[nodiscard]] status_type status_code() const;
+        /**
+         * Get the description
+         * @return description
+         */
+        [[nodiscard]]std::string to_string() const;
     };
 
 }

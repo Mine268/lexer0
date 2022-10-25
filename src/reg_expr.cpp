@@ -91,3 +91,11 @@ void lexer0::repeat_expr::create_nfa(lexer0::nfa &fa, std::size_t zero_status) c
     fa.add_trans(acc_r, acc);
     fa.add_trans(acc, zero_r);
 }
+
+lexer0::nfa lexer0::reg_expr::get_nfa(lexer0::reg_expr* r) {
+    auto size = r->get_size(true);
+    nfa fa{size};
+    r->create_nfa(fa, 0);
+    fa.add_accept(size - 1);
+    return fa;
+}

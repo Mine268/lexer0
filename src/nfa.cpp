@@ -6,11 +6,11 @@ namespace lexer0 {
         curr_status.clear();
         curr_status.push_back(0);
         trans_empty();
-        is_trapped = std::reduce(curr_status.begin(),
+        is_trapped = std::accumulate(curr_status.begin(),
                                  curr_status.end(),
                                  true,
-                                 [&](auto res, auto ix) {
-                                     return res && trap_status.at(ix);
+                                 [&](auto ix1, auto ix2) {
+                                     return trap_status.at(ix1) && trap_status.at(ix2);
                                  });
     }
 
@@ -25,11 +25,11 @@ namespace lexer0 {
     void nfa::add_accept(status_type acc_status) {
         accept_status.at(acc_status) = true;
         untrap(acc_status);
-        is_trapped = std::reduce(curr_status.begin(),
+        is_trapped = std::accumulate(curr_status.begin(),
                                  curr_status.end(),
                                  true,
-                                 [&](auto res, auto ix) {
-                                     return res && trap_status.at(ix);
+                                 [&](auto ix1, auto ix2) {
+                                     return trap_status.at(ix1) && trap_status.at(ix2);
                                  });
     }
 
@@ -48,6 +48,10 @@ namespace lexer0 {
                 return res || (inv_ix == from);
             }) ? 0 : (inv_trans.at(to).push_back(from), 0);
             trans_empty();
+
+            if (!std::get<0>(v)) {
+                registered_input.insert(std::get<1>(v));
+            }
         }
     }
 
@@ -67,23 +71,7 @@ namespace lexer0 {
     }
 
     void nfa::trans_empty() {
-        std::queue<status_type> q;
-        bit_flagger flagger {size, false};
-        for (auto c : curr_status) {
-            q.push(c);
-            flagger.set(c, true);
-        }
-        while (!q.empty()) {
-            auto top = q.front();
-            q.pop();
-            for (auto &[key, val] : trans.at(top)) {
-                if (std::get<0>(key) && !flagger.get(val)) {
-                    q.push(val);
-                    flagger.set(val, true);
-                    curr_status.push_back(val);
-                }
-            }
-        }
+        trans_empty_on(curr_status);
     }
 
     bit_flagger nfa::status_code() const {
@@ -99,18 +87,7 @@ namespace lexer0 {
             curr_status.clear();
             return std::make_tuple(false, is_trapped);
         }
-
-        std::vector<status_type> next_status;
-        for (auto curr : curr_status) {
-            auto& trans_map = trans.at(curr);
-            for (auto &[input_tup, ns] : trans_map) {
-                if (!std::get<0>(input_tup) && std::get<1>(input_tup) == v) {
-                    next_status.push_back(ns);
-                }
-            }
-        }
-        curr_status = std::move(next_status);
-        trans_empty();
+        curr_status = trans_on_on(curr_status, v);
         is_trapped = curr_status.empty() ||
                 std::accumulate(curr_status.begin(),
                             curr_status.end(),
@@ -161,4 +138,91 @@ namespace lexer0 {
         ret += '\n';
         return ret;
     }
+
+    void nfa::trans_empty_on(std::vector<status_type> &status) {
+        std::queue<status_type> q;
+        bit_flagger flagger{size, false};
+        for (auto c: status) {
+            q.push(c);
+            flagger.set(c, true);
+        }
+        while (!q.empty()) {
+            auto top = q.front();
+            q.pop();
+            for (auto &[key, val]: trans.at(top)) {
+                if (std::get<0>(key) && !flagger.get(val)) {
+                    q.push(val);
+                    flagger.set(val, true);
+                    status.push_back(val);
+                }
+            }
+        }
+    }
+
+    std::vector<status_type> nfa::trans_on_on(const std::vector<status_type> &status, input_type v) {
+        std::vector<status_type> next_status;
+        bit_flagger flag{size, false};
+        for (auto curr: status) {
+            for (auto &[input, ns] : trans.at(curr)) {
+                if (!std::get<0>(input) && std::get<1>(input) == v && !flag.get(ns)) {
+                    next_status.push_back(ns);
+                    flag.set(ns, true);
+                }
+            }
+        }
+        trans_empty_on(next_status);
+        return next_status;
+    }
+
+    dfa nfa::get_dfa() {
+        std::vector<std::map<input_type, status_type>> dfa_trans(1);
+
+        std::queue<std::vector<status_type>> queue;
+        std::map<std::vector<status_type>, status_type> compound_ix_map;
+        status_type top_status_ix{0};
+
+        decltype(curr_status) compound_initial_status{0}; // status that begin with 0
+        trans_empty_on(compound_initial_status); // expand the transition
+
+        queue.push(compound_initial_status); // initial the bfs queue
+        compound_ix_map.insert(std::make_pair(compound_initial_status, top_status_ix++)); // status code 0
+
+        while (!queue.empty()) {
+            auto top = std::move(queue.front());
+            queue.pop();
+            auto top_dfa_ix = compound_ix_map.find(top)->second;
+            for (auto input : registered_input) {
+                auto next_compound = trans_on_on(top, input);
+                auto next_compound_it = compound_ix_map.find(next_compound);
+                status_type next_dfa_ix;
+                if (next_compound_it == compound_ix_map.end()) {
+                    queue.push(next_compound);
+                    compound_ix_map.insert(std::make_pair(next_compound, top_status_ix++));
+                    next_dfa_ix = top_status_ix - 1;
+                    dfa_trans.emplace_back();
+                } else {
+                    next_dfa_ix = next_compound_it->second;
+                }
+                dfa_trans.at(top_dfa_ix).insert(std::make_pair(input, next_dfa_ix));
+            }
+        }
+
+        dfa ret_dfa{dfa_trans.size()};
+        for (std::size_t ix = 0; ix < dfa_trans.size(); ++ix) {
+            for (auto [input, ns] : dfa_trans.at(ix)) {
+                ret_dfa.add_trans(ix, ns, input);
+            }
+        }
+        for (auto &[compound_status, dfa_status] : compound_ix_map) {
+            if (std::any_of(compound_status.begin(), compound_status.end(),
+                            [&](const auto &item) {
+                                return accept_status.at(item);
+                            })) {
+                ret_dfa.add_accept(dfa_status);
+            }
+        }
+
+        return ret_dfa;
+    }
+
 }

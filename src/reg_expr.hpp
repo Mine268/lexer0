@@ -23,6 +23,12 @@ namespace lexer0 {
          * @return
          */
         [[nodiscard]] virtual std::size_t get_size(bool force) = 0;
+        /**
+         * Get NFA for the regex
+         * @param r Regex
+         * @return NFA
+         */
+        static nfa get_nfa(reg_expr *r);
     };
 
 
