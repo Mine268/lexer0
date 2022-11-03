@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <queue>
 
 using namespace lexer0;
 
@@ -15,11 +16,87 @@ void test_reg();
 template<typename>
 void test_nfa2dfa();
 
+template<typename>
+void test_dfa_optim1();
+
+template<typename>
+void test_dfa_optim2();
+
 int main() {
-    test_nfa2dfa<void>();
+    test_dfa_optim2<void>();
+//    test_dfa_optim1<void>();
+//    test_nfa2dfa<void>();
 //    test_reg<void>();
 //    test_nfa<void>();
     return 0;
+}
+
+template<typename>
+void test_dfa_optim2() {
+    // ab(xy)*(w|zt)*k
+    reg_expr* r =
+            cat_expr::get_cat(
+                    new terminate_expr{'a'},
+                    new terminate_expr{'b'},
+                    new repeat_expr{
+                            new cat_expr{
+                                    new terminate_expr{'x'},
+                                    new terminate_expr{'y'}
+                            }
+                    },
+                    new repeat_expr{
+                            or_expr::get_or(
+                                    new terminate_expr{'w'},
+                                    new cat_expr{
+                                            new terminate_expr{'z'},
+                                            new terminate_expr{'t'}
+                                    }
+                            )
+                    },
+                    new terminate_expr{'k'}
+            );
+    auto fa = reg_expr::get_nfa(r).get_dfa();
+    delete r;
+
+    auto ofa = fa.get_optimize();
+    std::cout << ofa.to_string() << std::endl;
+
+    std::string str;
+    std::cin >> str;
+    for (auto c : str) {
+        auto res = ofa.trans_on(c);
+        std::cout << "after [" << c << "], ";
+        if (std::get<0>(res)) {
+            std::cout << "accept: ";
+        } else if (std::get<1>(res)) {
+            std::cout << "trap: ";
+        } else {
+            std::cout << "read: ";
+        }
+        std::cout << ofa.status_code() << std::endl;
+    }
+}
+
+template<typename>
+void test_dfa_optim1() {
+    dfa f{5};
+
+    f.add_trans(0, 1, 'a');
+    f.add_trans(0, 0, 'b');
+    f.add_trans(1, 3, 'a');
+    f.add_trans(1, 2, 'b');
+    f.add_trans(2, 4, 'a');
+    f.add_trans(2, 4, 'b');
+    f.add_trans(3, 1, 'a');
+    f.add_trans(3, 2, 'b');
+    f.add_trans(4, 3, 'a');
+    f.add_trans(4, 2, 'b');
+    f.add_accept(1);
+    f.add_accept(3);
+
+    auto of = f.get_optimize();
+
+    std::cout << of.to_string() << std::endl;
 }
 
 template<typename>

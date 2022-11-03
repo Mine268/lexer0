@@ -207,7 +207,7 @@ namespace lexer0 {
             }
         }
 
-        dfa ret_dfa{dfa_trans.size()};
+        dfa ret_dfa{dfa_trans.size(), 0};
         for (std::size_t ix = 0; ix < dfa_trans.size(); ++ix) {
             for (auto [input, ns] : dfa_trans.at(ix)) {
                 ret_dfa.add_trans(ix, ns, input);
