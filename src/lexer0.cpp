@@ -1,3 +1,4 @@
+#include "t_reg_expr.hpp"
 #include "reg_expr.hpp"
 #include "nfa.hpp"
 #include <string>
@@ -22,13 +23,89 @@ void test_dfa_optim1();
 template<typename>
 void test_dfa_optim2();
 
+template<typename = void>
+void test_t_reg();
+
+template<typename = void>
+void test_r_reg2();
+
 int main() {
-    test_dfa_optim2<void>();
+    test_r_reg2();
+//    test_t_reg();
+//    test_dfa_optim2<void>();
 //    test_dfa_optim1<void>();
 //    test_nfa2dfa<void>();
 //    test_reg<void>();
 //    test_nfa<void>();
     return 0;
+}
+
+template<typename>
+void test_r_reg2() {
+    // abw*(p|s(k|zt)*)m
+    using REG = t_cat_expr<
+            t_terminate_expr<'a'>,
+            t_terminate_expr<'b'>,
+            t_repeat_expr<t_terminate_expr<'w'>>,
+            t_or_expr<
+                    t_terminate_expr<'p'>,
+                    t_cat_expr<
+                            t_terminate_expr<'s'>,
+                            t_repeat_expr<
+                                    t_or_expr<
+                                            t_terminate_expr<'k'>,
+                                            t_cat_expr<
+                                                    t_terminate_expr<'z'>,
+                                                    t_terminate_expr<'t'>
+                                            >
+                                    >
+                            >
+                    >
+            >,
+            t_terminate_expr<'m'>
+    >;
+    nfa fa {REG::get_size()};
+    REG::create_nfa(fa, 0);
+    fa.add_accept(REG::get_size() - 1);
+    std::cout << fa.to_string() << std::endl;
+
+    auto tfa = fa.get_dfa();
+    std::cout << tfa.to_string() << std::endl;
+    auto ofa = tfa.get_optimize();
+    std::cout << ofa.to_string() << std::endl;
+
+    std::string str;
+    std::cin >> str;
+    for (auto c : str) {
+        auto res = ofa.trans_on(c);
+        std::cout << "after [" << c << "], ";
+        if (std::get<0>(res)) {
+            std::cout << "accept: ";
+        } else if (std::get<1>(res)) {
+            std::cout << "trap: ";
+        } else {
+            std::cout << "read: ";
+        }
+        std::cout << ofa.status_code() << std::endl;
+    }
+}
+
+template<typename>
+void test_t_reg() {
+    // a|b*|(ef)*|c
+    using REG =
+            t_or_expr<
+                    t_terminate_expr<'a'>,
+                    t_repeat_expr<t_terminate_expr<'b'>>,
+                    t_repeat_expr<t_cat_expr<
+                            t_terminate_expr<'e'>,
+                            t_terminate_expr<'f'>
+                    >>,
+                    t_terminate_expr<'c'>
+            >;
+    nfa fa {REG::get_size()};
+    REG::create_nfa(fa, 0);
+    std::cout << fa.to_string() << std::endl;
 }
 
 template<typename>

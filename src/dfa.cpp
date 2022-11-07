@@ -73,6 +73,7 @@ namespace lexer0 {
             }
             ret += '\n';
         }
+        ret += "from: " + std::to_string(ini_status) + '\n';
         ret += "accept:";
         for (std::size_t ix = 0; ix < accept_status.size(); ++ix) {
             if (accept_status.at(ix)) {
@@ -122,13 +123,13 @@ namespace lexer0 {
         };
         // check if the compound is inside any compound status in the queue
         auto in_one = [&](compound_status &c_status) -> bool {
-            bool on_start = true, ret = true;
+            bool on_start = true;
             std::size_t c_ix = 0;
             for (std::size_t s = 0; s < size; ++s) {
                 if (c_status.get(s)) {
                     if (on_start) {
                         on_start = false;
-                        c_ix = s;
+                        c_ix = locate(s);
                     } else {
                         auto tmp_ix = locate(s);
                         if (tmp_ix != c_ix) {
@@ -137,7 +138,7 @@ namespace lexer0 {
                     }
                 }
             }
-            return ret;
+            return true;
         };
         // get iterator points at ix
         auto get_it = [&](std::size_t ix) {
@@ -182,12 +183,14 @@ namespace lexer0 {
                             }
                         }
                     }
-                    status_queue.erase(get_it(q_ix));
+                    status_queue.erase(get_it(q_ix--));
                     for (auto &map_pair: divide_map) {
                         status_queue.push_back(std::move(map_pair.second));
                     }
+                    goto jump_out;
                 }
             }
+            jump_out:;
         }
 
         // construct the DFA
