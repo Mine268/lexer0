@@ -64,9 +64,7 @@ void test_r_reg2() {
             >,
             t_terminate_expr<'m'>
     >;
-    nfa fa {REG::get_size()};
-    REG::create_nfa(fa, 0);
-    fa.add_accept(REG::get_size() - 1);
+    auto fa = t_get_nfa<REG>();
     std::cout << fa.to_string() << std::endl;
 
     auto tfa = fa.get_dfa();

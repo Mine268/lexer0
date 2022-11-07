@@ -116,4 +116,12 @@ namespace lexer0 {
         }
     }
 
+    template<typename Reg>
+    nfa t_get_nfa() {
+        nfa ret{Reg::get_size()};
+        Reg::create_nfa(ret, 0);
+        ret.add_accept(Reg::get_size() - 1);
+        return ret;
+    }
+
 }

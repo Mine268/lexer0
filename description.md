@@ -16,34 +16,34 @@
 3. 正则表达式重复
 4. 正则表达式选择
 
-如下是一个正则表达式`ab(xy)*(w|zt)*k`的一个构造示例
+如下是一个正则表达式`abw*(p|s(k|zt)*)m`的一个构造示例
 ```cpp
-reg_expr* r =
-        cat_expr::get_cat(
-                new terminate_expr{'a'},
-                new terminate_expr{'b'},
-                new repeat_expr{
-                        new cat_expr{
-                                new terminate_expr{'x'},
-                                new terminate_expr{'y'}
-                        }
-                },
-                new repeat_expr{
-                        or_expr::get_or(
-                                new terminate_expr{'w'},
-                                new cat_expr{
-                                        new terminate_expr{'z'},
-                                        new terminate_expr{'t'}
-                                }
-                        )
-                },
-                new terminate_expr{'k'}
-        );
+using REG = t_cat_expr<
+        t_terminate_expr<'a'>,
+        t_terminate_expr<'b'>,
+        t_repeat_expr<t_terminate_expr<'w'>>,
+        t_or_expr<
+                t_terminate_expr<'p'>,
+                t_cat_expr<
+                        t_terminate_expr<'s'>,
+                        t_repeat_expr<
+                                t_or_expr<
+                                        t_terminate_expr<'k'>,
+                                        t_cat_expr<
+                                                t_terminate_expr<'z'>,
+                                                t_terminate_expr<'t'>
+                                        >
+                                >
+                        >
+                >
+        >,
+        t_terminate_expr<'m'>
+>;
 ```
 
-构造完成之后，调用`reg_expr::get_nfa`获得生成的非确定性有限状态自动机对象（`nfa`对象）。
+构造完成之后，调用`lexer0::t_get_nfa`获得生成的非确定性有限状态自动机对象（`nfa`对象）。
 ```cpp
-auto the_nfa = reg_expr::get_nfa(r);
+auto the_nfa = lexer0::t_get_nfa<REG>();
 ```
 
 `nfa`提供了转换为等价的确定性有限状态自动机（`dfa`对象）的方法`nfa::get_dfa`，调用之获得确定花的非确定性有限状态自动机。
