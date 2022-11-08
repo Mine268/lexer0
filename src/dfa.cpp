@@ -91,12 +91,23 @@ namespace lexer0 {
         std::deque<compound_status> status_queue;
         // initial status: accept and others
         compound_status ini_all_acc{size, false}, ex_ini_all_acc{size, true};
+        // flag if all the statuses are accept status
+        bool is_all_acc = true;
         // configure the two initial statuses
         for (std::size_t i = 0; i < accept_status.size(); ++i) {
+            is_all_acc &= accept_status.at(i);
             if (accept_status.at(i)) {
                 ini_all_acc.set(i, true);
                 ex_ini_all_acc.set(i, false);
             }
+        }
+        if (is_all_acc) {
+            dfa easy_dfa {1};
+            for (auto input : registered_input) {
+                easy_dfa.add_trans(0, 0, input);
+            }
+            easy_dfa.add_accept(0);
+            return easy_dfa;
         }
         // trans on compound_status
         auto c_trans_on = [&](compound_status &c_status, input_type v) -> compound_status {

@@ -8,29 +8,23 @@
 
 using namespace lexer0;
 
-template<typename>
-void test_nfa();
-
-template<typename>
-void test_reg();
-
-template<typename>
-void test_nfa2dfa();
-
-template<typename>
-void test_dfa_optim1();
-
-template<typename>
-void test_dfa_optim2();
-
+template<typename> void test_nfa();
+template<typename> void test_reg();
+template<typename> void test_nfa2dfa();
+template<typename> void test_dfa_optim1();
+template<typename> void test_dfa_optim2();
+template<typename = void> void test_t_reg();
+template<typename = void> void test_r_reg2();
 template<typename = void>
-void test_t_reg();
+[[noreturn]] void test_r_reg3();
 
-template<typename = void>
-void test_r_reg2();
+template<std::size_t N>
+void foo() { foo<N-1>(); }
+template<>
+void foo<0>() {}
 
 int main() {
-    test_r_reg2();
+    test_r_reg3();
 //    test_t_reg();
 //    test_dfa_optim2<void>();
 //    test_dfa_optim1<void>();
@@ -38,6 +32,35 @@ int main() {
 //    test_reg<void>();
 //    test_nfa<void>();
     return 0;
+}
+
+template<typename>
+[[noreturn]] void test_r_reg3() {
+    using REG = t_float_reg;
+
+    auto fa = t_get_nfa<REG>();
+//    std::cout << fa.to_string() << std::endl;
+    auto tfa = fa.get_dfa();
+//    std::cout << tfa.to_string() << std::endl;
+    auto ofa = tfa.get_optimize();
+    std::cout << ofa.to_string() << std::endl;
+    while (true) {
+        std::string str;
+        std::cin >> str;
+        for (auto c: str) {
+            auto res = ofa.trans_on(c);
+            std::cout << "after [" << c << "], ";
+            if (std::get<0>(res)) {
+                std::cout << "accept: ";
+            } else if (std::get<1>(res)) {
+                std::cout << "trap: ";
+            } else {
+                std::cout << "read: ";
+            }
+            std::cout << ofa.status_code() << std::endl;
+        }
+        ofa.reset();
+    }
 }
 
 template<typename>
