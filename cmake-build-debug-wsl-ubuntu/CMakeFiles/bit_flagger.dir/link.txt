@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../bin/libbit_flagger.a  CMakeFiles/bit_flagger.dir/src/bit_flagger.cpp.o
-/usr/bin/ranlib ../bin/libbit_flagger.a

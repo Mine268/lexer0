@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../bin/libnfa.a  CMakeFiles/nfa.dir/src/nfa.cpp.o
-/usr/bin/ranlib ../bin/libnfa.a

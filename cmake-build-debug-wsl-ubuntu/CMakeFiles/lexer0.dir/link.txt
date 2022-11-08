@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/lexer0.dir/src/lexer0.cpp.o  -o ../bin/lexer0  ../bin/libreg_expr.a ../bin/libnfa.a ../bin/libdfa.a ../bin/libbit_flagger.a 
