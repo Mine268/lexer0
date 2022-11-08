@@ -12,6 +12,8 @@ namespace lexer0 {
         static constexpr std::size_t get_size();
 
         static void create_nfa(nfa &, status_type zero_status);
+
+        static std::string to_string();
     };
 
     template<int Termination>
@@ -24,6 +26,11 @@ namespace lexer0 {
         fa.add_trans(zero_status, zero_status + 1, Termination);
     }
 
+    template<int Termination>
+    std::string t_terminate_expr<Termination>::to_string() {
+        return std::to_string(Termination);
+    }
+
     template<typename Regex>
     class t_repeat_expr {
         using Check = decltype((Regex::get_size, Regex::create_nfa, int{}));
@@ -31,6 +38,8 @@ namespace lexer0 {
         static constexpr std::size_t get_size();
 
         static void create_nfa(nfa &, status_type zero_status);
+
+        static std::string to_string();
     };
 
     template<typename Regex>
@@ -48,6 +57,11 @@ namespace lexer0 {
         fa.add_trans(acc, zero_r);
     }
 
+    template<typename Regex>
+    std::string t_repeat_expr<Regex>::to_string() {
+        return '(' + Regex::to_string() + ")*";
+    }
+
     template<typename... Regex>
     class t_cat_expr {
         static_assert(sizeof...(Regex) >= 2, "Provide more than 1 regex.");
@@ -55,6 +69,8 @@ namespace lexer0 {
         static constexpr std::size_t get_size();
 
         static void create_nfa(nfa &, status_type zero_status);
+
+        static std::string to_string();
 
     private:
         template<typename FReg, typename... Regs>
@@ -82,12 +98,19 @@ namespace lexer0 {
     }
 
     template<typename... Regex>
+    std::string t_cat_expr<Regex...>::to_string() {
+        return (Regex::to_string() + ... + "");
+    }
+
+    template<typename... Regex>
     class t_or_expr {
         static_assert(sizeof...(Regex) >= 2, "Provide more than 1 regex.");
     public:
         static constexpr std::size_t get_size();
 
         static void create_nfa(nfa &, status_type zero_status);
+
+        static std::string to_string();
 
     private:
         template<typename FReg, typename... Regs>
@@ -131,6 +154,13 @@ namespace lexer0 {
         }
     }
 
+    template<typename... Regex>
+    std::string t_or_expr<Regex...>::to_string() {
+        std::string ret = ("" + ... + ('|' + Regex::to_string()));
+        ret = ret.substr(1);
+        return '(' + ret + ')';
+    }
+
     template<typename Regex>
     class t_exist_not_expr {
     public:
@@ -139,6 +169,8 @@ namespace lexer0 {
         static constexpr std::size_t get_size();
 
         static void create_nfa(nfa &, status_type zero_status);
+
+        static std::string to_string();
     };
 
     template<typename Regex>
@@ -150,6 +182,11 @@ namespace lexer0 {
     void t_exist_not_expr<Regex>::create_nfa(nfa &fa, status_type zero_status) {
         Regex::create_nfa(fa, zero_status);
         fa.add_trans(zero_status, zero_status + Regex::get_size() - 1);
+    }
+
+    template<typename Regex>
+    std::string t_exist_not_expr<Regex>::to_string() {
+        return '(' + Regex::to_string() + ")?";
     }
 
     template<typename Reg>
@@ -312,6 +349,17 @@ namespace lexer0 {
                             t_dec_integer_reg
                             >
                     >,
-            t_exist_not_expr<t_terminate_expr<'f'>>
+            t_exist_not_expr<t_or_expr<t_terminate_expr<'f'>, t_terminate_expr<'F'>>>
     >;
+
+    using t_blank_reg = t_repeat_expr<t_or_expr<
+            t_terminate_expr<' '>,
+            t_terminate_expr<'\t'>,
+            t_terminate_expr<'\v'>,
+            t_terminate_expr<'\r'>,
+            t_terminate_expr<'\n'>,
+            t_terminate_expr<'\a'>,
+            t_terminate_expr<'\b'>,
+            t_terminate_expr<'\f'>
+    >>;
 }

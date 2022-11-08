@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/d/work/lexer0/src/bit_flagger.hpp
+vector
+-
+algorithm
+-
+string
+-
+
+/mnt/d/work/lexer0/src/dfa.cpp
+dfa.hpp
+/mnt/d/work/lexer0/src/dfa.hpp
+
+/mnt/d/work/lexer0/src/dfa.hpp
+utility
+-
+vector
+-
+queue
+-
+map
+-
+set
+-
+type_traits
+-
+string
+-
+bit_flagger.hpp
+/mnt/d/work/lexer0/src/bit_flagger.hpp
+

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../bin/libreg_expr.a  CMakeFiles/reg_expr.dir/src/reg_expr.cpp.o
+/usr/bin/ranlib ../bin/libreg_expr.a

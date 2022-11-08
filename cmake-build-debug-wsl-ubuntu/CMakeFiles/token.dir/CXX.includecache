@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/d/work/lexer0/src/token.cpp
+token.hpp
+/mnt/d/work/lexer0/src/token.hpp
+
+/mnt/d/work/lexer0/src/token.hpp
+tuple
+-
+string
+-
+

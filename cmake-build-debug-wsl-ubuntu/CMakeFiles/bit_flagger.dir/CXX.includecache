@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/d/work/lexer0/src/bit_flagger.cpp
+bit_flagger.hpp
+/mnt/d/work/lexer0/src/bit_flagger.hpp
+
+/mnt/d/work/lexer0/src/bit_flagger.hpp
+vector
+-
+algorithm
+-
+string
+-
+
