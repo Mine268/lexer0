@@ -60,11 +60,8 @@ auto good_fa = bad_fa.get_optimize(); // DFA最小化
 使用提供的`t_lexer`类，可以构造针对字符串进行识别的词法分析器。`t_lexer`同时匹配多个正则表达式，并取其中匹配结果最长的正则表达式的匹配结果作为一个 token 输出，token 包含如下的信息
 
 - `token_id`：该 token 的标识号，表示该 token 由哪一个正则表达式识别，为构造`t_lexer`时提供的正则表达式的序号
-
 - `toekn_start`：这个 token 在字符串中的起始位置
-
 - `token_length`：这个 token 的长度
-
 - `token_string`：这个 token 的内容
 
 然后从这个 token 的后一个字符继续开始匹配。
@@ -81,11 +78,8 @@ class t_lexer;
 例如，构造一个识别
 
 1. C 语言标准的标识符
-
 2. 非负整数
-
 3. 非负浮点数
-
 4. 空格
 
 的词法分析器的代码如下
