@@ -57,7 +57,7 @@ namespace lexer0 {
                 token_stream.push_back(
                         token{recent_match_reg,
                               start_ix,
-                              curr_ix - start_ix + 1,
+                              recent_match_ix - start_ix + 1,
                               sv.substr(start_ix, recent_match_ix - start_ix + 1)});
                 start_ix = curr_ix = recent_match_ix + 1;
                 for (auto &dfa : reg_vector) {

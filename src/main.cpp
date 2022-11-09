@@ -18,7 +18,7 @@ template<typename = void> void test_t_reg();
 template<typename = void> void test_r_reg2();
 template<typename = void> [[noreturn]] void test_r_reg3();
 template<typename = void> void test_r_str();
-template<typename = void> void test_lexer();
+template<typename = void> [[noreturn]] void test_lexer();
 
 int main() {
     test_lexer();
@@ -27,11 +27,16 @@ int main() {
 
 template<typename>
 void test_lexer() {
-    t_lexer<t_integer_reg, t_float_reg, t_blank_reg> the_lexer;
-    std::string str;
-    std::getline(std::cin, str);
-    auto ts = the_lexer.lexer(str);
-    ts.size();
+    while (true) {
+        t_lexer<t_c_identifier_reg, t_integer_reg, t_float_reg, t_blank_reg> the_lexer;
+        std::string str;
+        std::getline(std::cin, str);
+        auto ts = the_lexer.lexer(str);
+        for (auto &t : ts) {
+            std::cout << t.to_string() << std::endl;
+        }
+        std::cout << std::endl;
+    }
 }
 
 template<typename>

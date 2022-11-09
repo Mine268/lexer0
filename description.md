@@ -1,88 +1,118 @@
- 
 # lexer0
 
-`lexer0`是一个简单的正则文法识别器，通过构造有限状态自动机实现了正则文法的识别。
+`lexer0`是一个简单的正则文法识别器，通过构造有限状态自动机实现了正则文法的识别。本文介绍了`lexer0`的使用方法。
 
-主要实现的三个类
-- `nfa`：非确定性有限状态自动机类
-- `dfa`：确定性有限状态自动机类
-- `reg_expr`：正则表达式构造类
+`lexer0`主要通过模板语法静态地来构造正则表达式，然后动态地生成识别该正则表达式的确定性有限状态自动机，再动态地使用这个自动机对字符串进行识别。
 
-## reg_expr
+## 正则表达式的构造
 
-正则表达式构造类，提供类四种正则表达式的构造入口，通过构造正则表达式，`reg_expr`生成对应的`nfa`对象，从而实现类识别正则表达式的目的。四种正则表达式分别是：
-1. 终结字符
-2. 正则表达式连接
-3. 正则表达式重复
-4. 正则表达式选择
+使用模板进行构造，主要使用的语句是`using`。`lexer0`提供了四种基础的正则类模板，基于这些基础的模板可以构造复杂的正则表达式：
 
-如下是一个正则表达式`abw*(p|s(k|zt)*)m`的一个构造示例
+- `t_terminate_expr<int Termination>`：表示作为终结符存在的正则表达式
+- `t_repeat_expr<typename Reg>`：表示将某个正则表达式重复零或多次的正则表达式
+- `t_cat_expr<typename... Regs>`：表示将多个正则表达式拼接而成的正则表达式
+- `t_or_expr<typename... Regs>`：表示多个表达式均可出现的正则表达式
+- `t_exist_not_expr<typename Reg>`：表示某个正则表达式出现或不出现的正则表达式
+
+若希望匹配终结符串`abc`，构造对应的正则表达式的方法为
+
 ```cpp
 using REG = t_cat_expr<
-        t_terminate_expr<'a'>,
+    t_terminate_expr<'a'>,
+    t_terminate_expr<'b'>,
+    t_terminate_expr<'c'>>
+```
+
+如上例所示，如果希望构造匹配单个终结字符的正则表达式，可以使用`t_termiante_expr`将字符作为模板实参写入即可，这也是一切正则表达式构造的起点。
+
+同理，如果希望构造「重复正则表达式/`*`正则」或者「存在正则表达式/`?`正则」，则可以使用`t_repeat_expr<typename Reg>`或者`t_exist_not_expr<typename Reg>`，将正则表达式对应的类型作为模板形参填入即可。
+
+如果希望构造「连接正则表达」式或者「或正则表达式/`|`正则」，可以使用`t_cat_expr<typename... Regs>`或这`t_or_expr<typename... Regs>`，将需要连接/或的正则表达式（两个或以上）依次作为可变模板参数写入即可。
+
+例如，正则表达式`a(b|(cd)*)k?`的构造方法为
+
+```cpp
+using REG = t_cat_expr<
+    t_terminate_expr<'a'>,
+    t_or_expr<
         t_terminate_expr<'b'>,
-        t_repeat_expr<t_terminate_expr<'w'>>,
-        t_or_expr<
-                t_terminate_expr<'p'>,
-                t_cat_expr<
-                        t_terminate_expr<'s'>,
-                        t_repeat_expr<
-                                t_or_expr<
-                                        t_terminate_expr<'k'>,
-                                        t_cat_expr<
-                                                t_terminate_expr<'z'>,
-                                                t_terminate_expr<'t'>
-                                        >
-                                >
-                        >
-                >
-        >,
-        t_terminate_expr<'m'>
+        t_repeat_expr<
+            t_cat_expr<
+                t_terminate_expr<'c'>,
+                t_terminate_expr<'d'>
+            >
+        >
+    >,
+    t_exist_not_expr<t_terminate_expr<'k'>>
 >;
 ```
 
-构造完成之后，调用`lexer0::t_get_nfa`获得生成的非确定性有限状态自动机对象（`nfa`对象）。
+可以通过正则表达式构造识别这个正则表达式的自动机
+
 ```cpp
-auto the_nfa = lexer0::t_get_nfa<REG>();
+auto fa = lexer0::t_get_nfa(); // 从正则构造NFA
+auto bad_fa = fa.get_dfa(); // NFA确定化为DFA
+auto good_fa = bad_fa.get_optimize(); // DFA最小化
 ```
 
-`nfa`提供了转换为等价的确定性有限状态自动机（`dfa`对象）的方法`nfa::get_dfa`，调用之获得确定花的非确定性有限状态自动机。
+## 识别字符串
+
+使用提供的`t_lexer`类，可以构造针对字符串进行识别的词法分析器。`t_lexer`同时匹配多个正则表达式，并取其中匹配结果最长的正则表达式的匹配结果作为一个 token 输出，token 包含如下的信息
+
+- `token_id`：该 token 的标识号，表示该 token 由哪一个正则表达式识别，为构造`t_lexer`时提供的正则表达式的序号
+
+- `toekn_start`：这个 token 在字符串中的起始位置
+
+- `token_length`：这个 token 的长度
+
+- `token_string`：这个 token 的内容
+
+然后从这个 token 的后一个字符继续开始匹配。
+
+`t_lexer`的声明如下
+
 ```cpp
-auto the_dfa = r.get_dfa();
+template<typename... Reg>
+class t_lexer;
 ```
 
-在获得类确定性有限状态自动机后可以调用`dfa::get_optimize`进行最小化。
+其中`Reg...`为这个词法分析器识别的所有正则表达式。
+
+例如，构造一个识别
+
+1. C 语言标准的标识符
+
+2. 非负整数
+
+3. 非负浮点数
+
+4. 空格
+
+的词法分析器的代码如下
+
 ```cpp
-auto the_optim_dfa = the_dfa.get_optimize();
+// 正则表达式的定义略，具体见"t_reg_expr.hpp"文件
+t_lexer<t_c_identifier_reg,
+    t_integer_reg,
+    t_float_reg,
+    t_blank_reg>
+lexer;
 ```
 
-## dfa / nfa
+调用`t_lexer::lexer(const std::string&)`识别字符串
 
-`dfa`和`nfa`的使用只需要注意两点：
-1. 接受某一个输入之后的返回值
-2. 重置`dfa`/`nfa`的状态
-3. 获取`dfa`/`nfa`的状态
-
-两者的使用方式类似，后文不做区分，这里设`fa`为一个`dfa`/`nfa`对象。
-
-### 接受输入后的返回值
-
-通过`dfa::trans_on`/`nfa::trans_on`方法接受输入，例如输入`23`并转移的方法为
 ```cpp
-auto res_tup = fa.trans_on(23);
+auto ts = lexer("flag1 28 9e4");
+for (auto& t : ts)
+    std::cout << ts.to_string() << std::endl;
 ```
 
-返回一个`std::tuple<bool, bool>`对象，其中第一个元素表示接受输入之后`fa`是否转移到类接受状态，第二个元素表示接受输入之后`fa`接下来的所有可能转移到的状态中是否存在接受状态。
+识别出的 token 流为
 
-前者的含义不必说明，后者用来表示继续向下转移是否有意义，用于进行**贪婪搜索**。
-
-### 重置 dfa/nfa 状态
-
-调用`dfa::reset`/`nfa::reset`重置状态及的当前状态为起始状态，以重新开始新一轮的匹配，如
-```cpp
-fa.reset();
 ```
-
-### 获取 dfa/nfa 状态
-
-调用`dfa::status_code`/`nfa::status_code`获取当前状态及所处的状态，这个状态本身没有什么含义，但是可以和这个状态机中的其他状态进行比较判别。
+[0,0,5,flag1]
+[3,5,1, ]
+[1,6,2,28]
+[3,8,1, ]
+[2,9,3,9e4]
+```
