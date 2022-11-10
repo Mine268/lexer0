@@ -18,7 +18,7 @@ template<typename = void> void test_t_reg();
 template<typename = void> void test_r_reg2();
 template<typename = void> [[noreturn]] void test_r_reg3();
 template<typename = void> void test_r_str();
-template<typename = void> [[noreturn]] void test_lexer();
+template<typename = void> void test_lexer();
 
 int main() {
     test_lexer();
@@ -27,12 +27,34 @@ int main() {
 
 template<typename>
 void test_lexer() {
-    while (true) {
-        t_lexer<t_c_identifier_reg, t_integer_reg, t_float_reg, t_blank_reg> the_lexer;
-        std::string str;
-        std::getline(std::cin, str);
+    t_lexer<
+        t_terminate_expr<';'>,
+        t_terminate_expr<':'>,
+        t_terminate_expr<','>,
+        t_terminate_expr<'='>,
+        t_terminate_expr<'('>,
+        t_terminate_expr<')'>,
+        t_terminate_expr<'+'>,
+        t_terminate_expr<'-'>,
+        t_terminate_expr<'*'>,
+        t_terminate_expr<'/'>,
+        t_c_identifier_reg,
+        t_float_reg,
+        t_blank_reg
+    > the_lexer;
+
+    const std::string test_str[] = {";func(x1,x2)=x1+x2*x1+x2",
+                              ":f(1,g(223+koo(var1))*5.e3f)+52",
+                              "45e",
+                              "__foo",
+                              ":300e4f+.3f * (.0002f-15.f)",
+                              "var1+var2-var3*(var4/var5-45.23)",
+                              "-var"};
+
+    for (auto &str: test_str) {
+        std::cout << str << std::endl;
         auto ts = the_lexer.lexer(str);
-        for (auto &t : ts) {
+        for (auto &t: ts) {
             std::cout << t.to_string() << std::endl;
         }
         std::cout << std::endl;
